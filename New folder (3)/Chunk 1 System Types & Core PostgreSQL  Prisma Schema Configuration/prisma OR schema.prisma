@@ -1,0 +1,51 @@
+// This is your production Prisma schema file.
+// Enforces optimized indexes for high-throughput anonymous telemetry tracking.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Web3DomainIndex {
+  id             String   @id @default(uuid()) @db.Uuid
+  domainName     String   @unique @db.VarChar(255) // e.g., vitalik.eth, degen.sol
+  provider       String   @db.VarChar(50)         // ENS, UNSTOPPABLE, LENS
+  resolvedHash   String   @db.Text                // ipfs://..., ar://...
+  ownerAddress   String   @db.VarChar(64)         // Blockchain public key wallet address
+  verifiedByUser Boolean  @default(false)
+  indexedAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([domainName])
+  @@index([provider])
+}
+
+model AnonymousTelemetry {
+  id               String   @id @default(uuid()) @db.Uuid
+  searchQueryQuery String   @db.Text                // The cleaned search term normalized
+  isDomainTarget   Boolean  @default(false)         // True if query parsed directly to a domain layout
+  deviceType       String   @db.VarChar(50)         // Desktop, Mobile, Tablet, Bot
+  countryCode      String   @default("XX") @db.VarChar(2) // Aggregated GeoIP context
+  timestamp        DateTime @default(now())
+
+  @@index([searchQueryQuery])
+  @@index([timestamp])
+}
+
+model SearchAdAuction {
+  id          String   @id @default(uuid()) @db.Uuid
+  targetToken String   @db.VarChar(100)        // Target keyword matching string (e.g., wallet)
+  bidAmount   Decimal  @db.Decimal(18, 8)      // Standard decimal accuracy matching token scale
+  proxyUrl    String   @db.Text                // Target destination Web3 site proxy link
+  headline    String   @db.VarChar(255)
+  description String   @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([targetToken, isActive])
+}

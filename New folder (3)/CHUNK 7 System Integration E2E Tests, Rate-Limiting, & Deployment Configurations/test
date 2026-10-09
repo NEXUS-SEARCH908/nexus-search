@@ -1,0 +1,61 @@
+import { sanitizeAndIdentifyDomain, executeWeb3Resolution } from '../lib/web3';
+import { isRateLimited } from '../lib/rateLimit';
+
+/**
+ * Enterprise Production E2E Verification Suite
+ * Executes functional cross-module integration sanity validation passes.
+ */
+export async function runSystemDiagnosticSuite(): Promise<{ 
+  allTestsPassed: boolean; 
+  log: string[] 
+}> {
+  const diagnosticLog: string[] = [];
+  let executionSuccess = true;
+
+  const assert = (condition: boolean, testMessage: string) => {
+    if (!condition) {
+      diagnosticLog.push(`❌ FAIL: ${testMessage}`);
+      executionSuccess = false;
+    } else {
+      diagnosticLog.push(`✅ PASS: ${testMessage}`);
+    }
+  };
+
+  try {
+    diagnosticLog.push('Starting system-wide cross-module code verification runtime passes...');
+
+    // 1. Sanitization Layer Structural Isolation Verification
+    const ensCheck = sanitizeAndIdentifyDomain('vitalik.eth');
+    assert(ensCheck.isValid && ensCheck.provider === 'ENS', 'ENS clean text pattern validation');
+
+    const solCheck = sanitizeAndIdentifyDomain('invalid%%name.sol');
+    assert(!solCheck.isValid, 'Malicious special character string injection validation reject');
+
+    // 2. Automated Free Provider Live Network Lookup Connectivity Check
+    diagnosticLog.push('Testing public protocol query connectivity matrices via open proxy links...');
+    const ensResolution = await executeWeb3Resolution('vitalik.eth');
+    assert(ensResolution.success, 'Public resolution link handling check successfully returned response wrappers');
+
+    // 3. Rate Limiter Functional Validation Pass
+    const clientIp = '192.168.1.1';
+    let limited = false;
+    
+    // Simulate deliberate flooding burst attacks inside runtime memory bounds
+    for (let i = 0; i < 70; i++) {
+      if (isRateLimited(clientIp)) {
+        limited = true;
+        break;
+      }
+    }
+    assert(limited, 'Memory token-bucket threshold system successfully intercepted high volume traffic events');
+
+  } catch (criticalDiagnosticError: any) {
+    executionSuccess = false;
+    diagnosticLog.push(`💥 SYSTEM ABORT: Unexpected fatal exception caught: ${criticalDiagnosticError?.message || criticalDiagnosticError}`);
+  }
+
+  return {
+    allTestsPassed: executionSuccess,
+    log: diagnosticLog
+  };
+}
